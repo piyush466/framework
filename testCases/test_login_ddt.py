@@ -1,70 +1,66 @@
+import time
+
 from selenium import webdriver
 from pageObjects.LoginPage import Login
 import pytest
 from utilities.readProperties import ReadConfig
 from utilities.customLogger import logGen
+from utilities import XLUtils
 
-class Test_001:
+class Test_002_DDT_Login:
     url = ReadConfig.getApplicationURl()
-    # url2 = ReadConfig.getUrl2()
-    username = ReadConfig.getusername()
-    password = ReadConfig.getpassword()
+    path = ".//testData/testdata123.xlsx"
 
     logger = logGen.loggen()
 
-    def test_homepage_title(self,setup):
-        self.logger.info("***************** Test_001 ******************")
-        self.logger.info("***************** verify home page ******************")
-        self.driver = setup
-        self.driver.get(self.url)
-        act_title = self.driver.title
 
-        if act_title == "Your store. Login":
-            self.logger.info("***************** title is pass ******************")
-            self.driver.close()
-            assert True
-
-        else:
-            self.logger.error("***************** title is failed******************")
-            self.driver.close()
-            assert False
-
-
-
-    def test_login(self,setup):
+    def test_login_ddt(self,setup):
         self.logger.info("***************** test_login is started ******************")
         self.driver = setup
         self.driver.get(self.url)
         self.lp = Login(self.driver)
-        self.lp.setusername(self.username)
-        self.lp.setpassword(self.password)
-        self.lp.click_login()
-        act_title = self.driver.title
+        self.rows =XLUtils.getRowCount(self.path,"Sheet1")
+        print("Nu,bers od rows in a exel",self.rows)
 
-        if act_title == "Dashboard / nopCommerce administration":
-            self.driver.save_screenshot(".\\Screenshots\\"+"login2.png")
-            self.logger.info("***************** title is pass ******************")
+        st_list = []
+        for r in range(2,self.rows+1):
+            self.user= XLUtils.readData(self.path,'Sheet1',r,1)
+            self.password = XLUtils.readData(self.path,"Sheet1",r,2)
+            self.result = XLUtils.readData(self.path, "Sheet1", r, 3)
+            self.lp.setusername(self.user)
+            self.lp.setpassword(self.password)
+            self.lp.click_login()
+            time.sleep(4)
+
+            act_tilte= self.driver.title
+            exp_tilte = "Dashboard / nopCommerce administration"
+
+            if act_tilte==exp_tilte:
+                if self.result== "pass":
+                    self.lp.click_logout()
+                    st_list.append("pass")
+                elif self.result == "fail":
+                    self.lp.click_logout()
+                    st_list.append("fail")
+
+            elif act_tilte!=exp_tilte:
+                if self.result== "pass":
+                    self.lp.click_logout()
+                    st_list.append("fail")
+                elif self.result == "fail":
+                    self.lp.click_logout()
+                    st_list.append("pass")
+
+        if "fail" not in st_list:
+            print("pass the ddtt test ")
             self.driver.close()
             assert True
 
-
         else:
-            self.logger.error("***************** title is failed ******************")
+            print("fail")
             self.driver.close()
             assert False
 
-
-    # def test_perpose(self,setup):
-    #     self.driver = setup
-    #     self.driver.get("https://" +username_in_url+":"+password_in_url+"@"+self.url2)
-    #     indiefolio = self.driver.title
-    #
-    #     if indiefolio == "Indieflio || Hire The Best Freelancers For Your Creative Needs":
-    #         print("pass")
-    #         assert True
-    #     else:
-    #         print("fail")
-    #         assert False
 
 
 
